@@ -15,6 +15,13 @@ public class Node<T> {
 		this.data = data;
 	}
 	
+	public boolean isLeaf() {
+		if (branchs == null || branchs.isEmpty()) {
+			return true;
+		}
+		return false;
+	}
+	
 	public Branch<T> addBranch(Branch<T> branch) {
 		branch.setParentNode(this);
 		branchs.add(branch);

@@ -20,9 +20,11 @@ import com.opencsv.CSVReader;
 import br.edu.uni7.util.Branch;
 import br.edu.uni7.util.Node;
 
-public class Application {
+public class Application implements CreditProfileFinder {
 
 	private String dataCsv = "dados.csv";
+	
+	private Node<String> rootNode;
 
 	public Application() {
 		List<PerfilDeCredito> data = loadData();
@@ -38,7 +40,7 @@ public class Application {
 //		System.out.println(propertyGainExpectation(data, "renda"));
 //		System.out.println(selectProperty2(properties, data));
 
-		Node<String> rootNode = induceTree(data, properties);
+		rootNode = induceTree(data, properties);
 
 		mxGraph graph = getGraphfromNode(rootNode);
 		graph.getModel().endUpdate();
@@ -52,6 +54,36 @@ public class Application {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(1024, 600);
 		frame.setVisible(true);
+		
+		CreditProfileFrame askFrame = new CreditProfileFrame(this);
+		askFrame.setVisible(true);
+	}
+	
+	public String findCreditProfile(PerfilDeCredito perfil) {
+		return findCreditProfileInNode(perfil, rootNode);
+	}
+	
+	public String findCreditProfileInNode(PerfilDeCredito perfil, Node<String> node) {
+		if (rootNode != null) {
+			if (node.isLeaf()) {
+				return node.getData();
+			} else {
+				Node<String> choosenChildNode = null;
+				String propertyValue = perfil.getPropertyValue(node.getData()).trim();
+				for (Branch<String> branch: node.getBranchs()) {
+					if (branch.getName().trim().equals(propertyValue)) {
+						choosenChildNode = branch.getNode();
+						break;
+					}
+				}
+				if (choosenChildNode == null) {
+					throw new IllegalStateException("Child node not found in branchs");
+				}
+				return findCreditProfileInNode(perfil, choosenChildNode);
+			}
+		} else {
+			throw new IllegalStateException("Node not ready");
+		}
 	}
 
 	private mxGraph getGraphfromNode(Node<String> node) {
@@ -161,7 +193,7 @@ public class Application {
 
 	private static final String[] SEQUENCIA_DE_PROPRIEDADES = { "historicoDeCredito", "garantia", "divida", "renda" };
 
-	private String selectProperty(List<String> propriedades) {
+	private String selectProperty(List<String> propriedades, List<PerfilDeCredito> data) {
 		if (propriedades == null || propriedades.isEmpty()) {
 			throw new IllegalArgumentException("O argumento não pode ser vazio nem nulo.");
 		}
